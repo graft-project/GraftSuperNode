@@ -3,6 +3,7 @@ TRANSACTION_KEY = 'Transaction'
 RESULT_KEY = 'Result'
 SALE_STATUS_KEY = 'SaleStatus'
 KEY_IMAGE_KEY = 'KeyImage'
+PAY_STATUS_KEY = "PayStatus"
 
 
 STATUS_OK = 0

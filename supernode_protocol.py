@@ -1,17 +1,20 @@
+from storages.local_data_storage import LocalDataStorage
 from threading import Lock
 from defines import *
 
 
 class SupernodeProtocol:
+    TRANSACTION_CACHE_LEVEL = "transaction_cache"
+    TRANSACTION_STATUS_LEVEL = "transaction_status"
+    AUTHORIZATION_CACHE_LEVEL = "authorization_cache"
+
     _instance = None
     _lock = Lock()
 
     def __init__(self):
-        # TODO: Temporary storages, in the future we can use Redis or something else.
-        self._transactions_cache = {}
-        self._transactions_status = {}
-        self._auth_cache = {}
-        ###########################
+        self._trans_cache_storage = LocalDataStorage(self.TRANSACTION_CACHE_LEVEL)
+        self._trans_status_storage = LocalDataStorage(self.TRANSACTION_STATUS_LEVEL)
+        self._auth_cache_storage = LocalDataStorage(self.AUTHORIZATION_CACHE_LEVEL)
         self._requests = {
             # Wallet DAPI
             'ReadyToPay': self.ready_to_pay,
@@ -52,22 +55,23 @@ class SupernodeProtocol:
         key_image = kwargs.get(KEY_IMAGE_KEY, None)
         if pid is None or key_image is None:
             return {RESULT_KEY: ERROR_EMPTY_PARAMS, TRANSACTION_KEY: None}
-        if not self._transactions_cache.__contains__(pid):
+        if not self._trans_cache_storage.exists(pid):
             return {RESULT_KEY: ERROR_PAYMENT_ID_DOES_NOT_EXISTS, TRANSACTION_KEY: None}
         # TODO: How to determine account
-        if self._auth_cache.__contains__(pid) and self._auth_cache[pid] == key_image:
+        if self._auth_cache_storage.exists(pid) and self._auth_cache_storage.get_data(pid) == key_image:
             return {RESULT_KEY: ERROR_ACCOUNT_LOCKED, TRANSACTION_KEY: None}
         # TODO: send BroadcastAccountLock()
-        return {RESULT_KEY: STATUS_OK, TRANSACTION_KEY: self._transactions_cache.get(pid)}
+        print(self._trans_cache_storage.get_data(pid))
+        return {RESULT_KEY: STATUS_OK, TRANSACTION_KEY: self._trans_cache_storage.get_data(pid)}
 
     def reject_pay(self, **kwargs):
         pid = kwargs.get(PID_KEY, None)
         if pid is None:
             return {RESULT_KEY: ERROR_EMPTY_PARAMS}
-        if not self._transactions_cache.__contains__(pid):
+        if not self._trans_cache_storage.exists(pid):
             return {RESULT_KEY: ERROR_PAYMENT_ID_DOES_NOT_EXISTS}
-        del self._transactions_cache[pid]
-        self._transactions_status[pid] = STATUS_REJECTED
+        self._trans_cache_storage.delete_data(pid)
+        self._trans_status_storage.store_data(pid, STATUS_REJECTED)
         # TODO: send BroadcastRemoveAccountLock()
         return {RESULT_KEY: STATUS_OK}
 
@@ -79,15 +83,16 @@ class SupernodeProtocol:
         # TODO: Validates
         # TODO: start Mining
         # TODO: send BroadcastTransaction()
+        self._trans_status_storage.store_data(pid, STATUS_APPROVED)
         return {RESULT_KEY: STATUS_OK}
 
     def get_pay_status(self, **kwargs):
         pid = kwargs.get(PID_KEY, None)
         if pid is None:
-            return {RESULT_KEY: ERROR_EMPTY_PARAMS, SALE_STATUS_KEY: STATUS_NONE}
-        if not self._transactions_status.__contains__(pid):
-            return {RESULT_KEY: ERROR_PAYMENT_ID_DOES_NOT_EXISTS, SALE_STATUS_KEY: STATUS_NONE}
-        return {RESULT_KEY: STATUS_OK, SALE_STATUS_KEY: self._transactions_status.get(pid)}
+            return {RESULT_KEY: ERROR_EMPTY_PARAMS, PAY_STATUS_KEY: STATUS_NONE}
+        if not self._trans_status_storage.exists(pid):
+            return {RESULT_KEY: ERROR_PAYMENT_ID_DOES_NOT_EXISTS, PAY_STATUS_KEY: STATUS_NONE}
+        return {RESULT_KEY: STATUS_OK, PAY_STATUS_KEY: self._trans_status_storage.get_data(pid)}
 
     # Point of Sale DAPI
 
@@ -96,10 +101,10 @@ class SupernodeProtocol:
         transaction = kwargs.get(TRANSACTION_KEY, None)
         if pid is None or transaction is None:
             return {RESULT_KEY: ERROR_EMPTY_PARAMS}
-        if self._transactions_cache.__contains__(pid):
-            return {RESULT_KEY, ERROR_PAYMENT_ID_ALREADY_EXISTS}
-        self._transactions_cache[pid] = transaction
-        self._transactions_status[pid] = STATUS_PROCESSING
+        if self._trans_cache_storage.exists(pid):
+            return {RESULT_KEY: ERROR_PAYMENT_ID_ALREADY_EXISTS}
+        self._trans_cache_storage.store_data(pid, transaction)
+        self._trans_status_storage.store_data(pid, STATUS_PROCESSING)
         # TODO: send BroadcastSaleRequest()
         return {RESULT_KEY: STATUS_OK}
 
@@ -107,9 +112,9 @@ class SupernodeProtocol:
         pid = kwargs.get(PID_KEY, None)
         if pid is None:
             return {RESULT_KEY: ERROR_EMPTY_PARAMS, SALE_STATUS_KEY: STATUS_NONE}
-        if not self._transactions_status.__contains__(pid):
+        if not self._trans_status_storage.exists(pid):
             return {RESULT_KEY: ERROR_PAYMENT_ID_DOES_NOT_EXISTS, SALE_STATUS_KEY: STATUS_NONE}
-        return {RESULT_KEY: STATUS_OK, SALE_STATUS_KEY: self._transactions_status.get(pid)}
+        return {RESULT_KEY: STATUS_OK, SALE_STATUS_KEY: self._trans_status_storage.get_data(pid)}
 
     # Broadcast DAPI
 
