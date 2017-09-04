@@ -18,6 +18,7 @@ settings = {
 class APIHandler(tornado.web.RequestHandler):
     def post(self, *args, **kwargs):
         request_body = json.loads(self.request.body)
+        SupernodeProtocol.instance().register_supernode(self.request.headers['Host'])
         logger.info('Received message: {}'.format(request_body))
         result = SupernodeProtocol.instance().process(**request_body)
         logger.info('Send message: {}'.format(result))
