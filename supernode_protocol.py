@@ -46,8 +46,8 @@ class SupernodeProtocol:
         return cls._instance
 
     def process(self, **kwargs):
-        call = kwargs['Call']
-        del kwargs['Call']
+        call = kwargs[CALL_KEY]
+        del kwargs[CALL_KEY]
         call_func = self._requests.get(call)
         if call_func is not None:
             return call_func(**kwargs)
@@ -107,18 +107,17 @@ class SupernodeProtocol:
         if pid is None or transaction is None:
             return {RESULT_KEY: ERROR_EMPTY_PARAMS}
         broadcast_node = kwargs.get(BROADCAST_KEY, None)
-        if broadcast_node is not None:
-            self._broadcast_api.add_sample_node(broadcast_node)
-        else:
-            if self._trans_cache_storage.exists(pid):
-                return {RESULT_KEY: ERROR_PAYMENT_ID_ALREADY_EXISTS}
+        if broadcast_node is None and self._trans_cache_storage.exists(pid):
+            return {RESULT_KEY: ERROR_PAYMENT_ID_ALREADY_EXISTS}
         if not self._trans_cache_storage.exists(pid):
             self._trans_cache_storage.store_data(pid, transaction)
             self._trans_status_storage.store_data(pid, STATUS_PROCESSING)
-        if self._broadcast_api.sale(**kwargs):
-            return {RESULT_KEY: STATUS_OK}
-        else:
-            return {RESULT_KEY: ERROR_BROADCAST_FAILED}
+        result = {RESULT_KEY: STATUS_OK}
+        if not self._broadcast_api.sale(**kwargs):
+            result = {RESULT_KEY: ERROR_BROADCAST_FAILED}
+        if broadcast_node is not None:
+            self._broadcast_api.add_sample_node(broadcast_node)
+        return result
 
     def get_sale_status(self, **kwargs):
         pid = kwargs.get(PID_KEY, None)

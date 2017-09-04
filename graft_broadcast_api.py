@@ -1,5 +1,5 @@
 from config import SEED_SAMPLE, API_URL
-from defines import BROADCAST_KEY, RESULT_KEY, STATUS_OK
+from defines import *
 import requests
 import time
 
@@ -20,7 +20,7 @@ class GraftBroadcastAPI(object):
         return self._seed_sample
 
     def sale(self, **kwargs):
-        kwargs.update({BROADCAST_KEY: self._active_node})
+        kwargs.update({BROADCAST_KEY: self._active_node, CALL_KEY: BROADCAST_SALE})
         result = True
         for node in self._seed_sample:
             url = API_URL.format(node)

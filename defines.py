@@ -1,3 +1,4 @@
+CALL_KEY = 'Call'
 PID_KEY = 'PID'
 TRANSACTION_KEY = 'Transaction'
 RESULT_KEY = 'Result'
@@ -6,6 +7,7 @@ KEY_IMAGE_KEY = 'KeyImage'
 PAY_STATUS_KEY = 'PayStatus'
 BROADCAST_KEY = 'Broadcast'
 
+BROADCAST_SALE = 'Sale'
 
 STATUS_OK = 0
 STATUS_APPROVED = 0
