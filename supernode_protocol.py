@@ -1,5 +1,7 @@
 from storages.local_data_storage import LocalDataStorage
+from storages.redis_data_storage import RedisDataStorage
 from graft_broadcast_api import GraftBroadcastAPI
+from config import REDIS_HOST, REDIS_PORT, STORAGE_TYPE, LOCAL_STORAGE, REDIS_STORAGE
 from threading import Lock
 from defines import *
 
@@ -14,9 +16,11 @@ class SupernodeProtocol:
 
     def __init__(self):
         self._broadcast_api = GraftBroadcastAPI()
-        self._trans_cache_storage = LocalDataStorage(self.TRANSACTION_CACHE_LEVEL)
-        self._trans_status_storage = LocalDataStorage(self.TRANSACTION_STATUS_LEVEL)
-        self._auth_cache_storage = LocalDataStorage(self.AUTHORIZATION_CACHE_LEVEL)
+        init_storage = {LOCAL_STORAGE: self._init_local_storage,
+                        REDIS_STORAGE: self._init_redis_storage}
+        if init_storage.get(STORAGE_TYPE, None) is None:
+            raise ValueError
+        init_storage.get(STORAGE_TYPE)()
         self._requests = {
             # Wallet DAPI
             'ReadyToPay': self.ready_to_pay,
@@ -104,11 +108,12 @@ class SupernodeProtocol:
     def sale(self, **kwargs):
         pid = kwargs.get(PID_KEY, None)
         transaction = kwargs.get(TRANSACTION_KEY, None)
-        if pid is None or transaction is None:
-            return {RESULT_KEY: ERROR_EMPTY_PARAMS}
         broadcast_node = kwargs.get(BROADCAST_KEY, None)
-        if broadcast_node is None and self._trans_cache_storage.exists(pid):
-            return {RESULT_KEY: ERROR_PAYMENT_ID_ALREADY_EXISTS}
+        if broadcast_node is None:
+            if pid is None or transaction is None:
+                return {RESULT_KEY: ERROR_EMPTY_PARAMS}
+            if self._trans_cache_storage.exists(pid):
+                return {RESULT_KEY: ERROR_PAYMENT_ID_ALREADY_EXISTS}
         if not self._trans_cache_storage.exists(pid):
             self._trans_cache_storage.store_data(pid, transaction)
             self._trans_status_storage.store_data(pid, STATUS_PROCESSING)
@@ -133,7 +138,16 @@ class SupernodeProtocol:
         return None
 
     def broadcast_transaction(self, **kwargs):
-        return None
+        pid = kwargs.get(PID_KEY, None)
+        transaction = kwargs.get(TRANSACTION_KEY, None)
+        approvals = kwargs.get(APPROVALS_KEY, None)
+        if pid is None or transaction is None or approvals is None:
+            return {RESULT_KEY: ERROR_EMPTY_PARAMS}
+        if not self._trans_cache_storage.exists(pid):
+            return {RESULT_KEY: ERROR_PAYMENT_ID_DOES_NOT_EXISTS}
+        self._trans_cache_storage.delete_data(pid)
+        self._trans_status_storage.store_data(pid, STATUS_APPROVED)
+        return {RESULT_KEY: STATUS_OK}
 
     def broadcast_remove_account_lock(self, **kwargs):
         return None
@@ -157,3 +171,13 @@ class SupernodeProtocol:
 
     def broadcast_supernode_remove(self, **kwargs):
         return None
+
+    def _init_local_storage(self):
+        self._trans_cache_storage = LocalDataStorage(self.TRANSACTION_CACHE_LEVEL)
+        self._trans_status_storage = LocalDataStorage(self.TRANSACTION_STATUS_LEVEL)
+        self._auth_cache_storage = LocalDataStorage(self.AUTHORIZATION_CACHE_LEVEL)
+
+    def _init_redis_storage(self):
+        self._trans_cache_storage = RedisDataStorage(REDIS_HOST, REDIS_PORT, self.TRANSACTION_CACHE_LEVEL)
+        self._trans_status_storage = RedisDataStorage(REDIS_HOST, REDIS_PORT, self.TRANSACTION_STATUS_LEVEL)
+        self._auth_cache_storage = RedisDataStorage(REDIS_HOST, REDIS_PORT, self.AUTHORIZATION_CACHE_LEVEL)
