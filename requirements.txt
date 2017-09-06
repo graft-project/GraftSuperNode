@@ -1,0 +1,5 @@
+requests==2.18.3
+tornado==4.5.1
+redis==2.10.6
+#Testing
+nose==1.3.7
