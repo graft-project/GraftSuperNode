@@ -29,10 +29,8 @@ sudo mkdir $DB_DIR
 sudo chown redis:redis $DB_DIR
 sudo chmod 770 $DB_DIR
 
-#Start and Test Redis
+#Start Redis
 sudo systemctl start redis
-sudo systemctl status redis
 
 #Enable Redis to Start at Boot
 sudo systemctl enable redis
-
