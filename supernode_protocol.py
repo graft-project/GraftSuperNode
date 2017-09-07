@@ -29,9 +29,9 @@ class SupernodeProtocol:
             'GetPayStatus': self.get_pay_status,
             # Point of Sale DAPI
             'Sale': self.sale,
+            'RejectSale': self.reject_sale,
             'GetSaleStatus': self.get_sale_status,
             # Broadcast DAPI
-            # 'BroadcastSaleRequest': self.broadcast_sale_request,
             'BroadcastAccountLock': self.broadcast_account_lock,
             'BroadcastTransaction': self.broadcast_transaction,
             'BroadcastRemoveAccountLock': self.broadcast_remove_account_lock,
@@ -123,6 +123,16 @@ class SupernodeProtocol:
         if broadcast_node is not None:
             self._broadcast_api.add_sample_node(broadcast_node)
         return result
+
+    def reject_sale(self, **kwargs):
+        pid = kwargs.get(PID_KEY, None)
+        if pid is None:
+            return {RESULT_KEY: ERROR_EMPTY_PARAMS}
+        if not self._trans_cache_storage.exists(pid):
+            return {RESULT_KEY: ERROR_PAYMENT_ID_DOES_NOT_EXISTS}
+        self._trans_cache_storage.delete_data(pid)
+        self._trans_status_storage.store_data(pid, STATUS_REJECTED)
+        return {RESULT_KEY: STATUS_OK}
 
     def get_sale_status(self, **kwargs):
         pid = kwargs.get(PID_KEY, None)

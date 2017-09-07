@@ -6,6 +6,7 @@ SALE_STATUS_KEY = 'SaleStatus'
 KEY_IMAGE_KEY = 'KeyImage'
 PAY_STATUS_KEY = 'PayStatus'
 BROADCAST_KEY = 'Broadcast'
+APPROVALS_KEY = 'Approvals'
 
 BROADCAST_SALE = 'Sale'
 

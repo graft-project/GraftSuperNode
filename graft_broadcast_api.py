@@ -24,7 +24,8 @@ class GraftBroadcastAPI(object):
         result = True
         for node in self._seed_sample:
             url = API_URL.format(node)
-            response = self._send_request(url, kwargs)
+            response = self._send_request(url, kwargs).json()
+            print response
             if response.get(RESULT_KEY) != STATUS_OK:
                 result = False
                 break
