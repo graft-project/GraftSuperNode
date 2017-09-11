@@ -118,9 +118,10 @@ class SupernodeProtocol:
             self._trans_cache_storage.store_data(pid, transaction)
             self._trans_status_storage.store_data(pid, STATUS_PROCESSING)
         result = {RESULT_KEY: STATUS_OK}
-        if not self._broadcast_api.sale(**kwargs):
-            result = {RESULT_KEY: ERROR_BROADCAST_FAILED}
-        if broadcast_node is not None:
+        if broadcast_node is None:
+            if not self._broadcast_api.sale(**kwargs):
+                result = {RESULT_KEY: ERROR_BROADCAST_FAILED}
+        else:
             self._broadcast_api.add_sample_node(broadcast_node)
         return result
 
