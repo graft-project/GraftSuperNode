@@ -7,8 +7,8 @@ class LocalDataStorage(DataStorage):
         self._storage = {}
         DataStorage.__init__(self, level)
 
-    def get_data(self, pid):
-        return self._storage.get(pid)
+    def get_data(self, pid, default=None):
+        return self._storage.get(pid, default)
 
     def store_data(self, pid, data):
         self._storage[pid] = data

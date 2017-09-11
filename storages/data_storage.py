@@ -5,7 +5,7 @@ class DataStorage:
     def storage_level(self):
         return self._level
 
-    def get_data(self, pid):
+    def get_data(self, pid, default=None):
         raise NotImplementedError
 
     def store_data(self, pid, data):

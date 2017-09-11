@@ -11,8 +11,11 @@ class RedisDataStorage(DataStorage):
     def get_key(self, pid):
         return "{}_{}".format(self.storage_level(), pid)
 
-    def get_data(self, pid):
-        return self._storage.get(name=self.get_key(pid))
+    def get_data(self, pid, default=None):
+        result = self._storage.get(name=self.get_key(pid))
+        if result is None:
+            result = default
+        return result
 
     def store_data(self, pid, data):
         self._storage.set(name=self.get_key(pid), value=data)
