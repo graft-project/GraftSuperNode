@@ -160,7 +160,7 @@ class SupernodeProtocol:
         approval = kwargs.get(APPROVAL_KEY, None)
         if pid is None or transaction is None or approval is None:
             return {RESULT_KEY: ERROR_EMPTY_PARAMS}
-        approvals = self._approval_storage.get_data(pid)
+        approvals = self._approval_storage.get_data(pid, {})
         approvals[approval] = transaction
         if len(approvals.keys()) == len(SEED_SAMPLE):
             # TODO: Mining
