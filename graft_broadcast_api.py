@@ -21,14 +21,22 @@ class GraftBroadcastAPI(object):
 
     def sale(self, **kwargs):
         kwargs.update({BROADCAST_KEY: self._active_node, CALL_KEY: BROADCAST_SALE})
+        return self.broadcast_message(**kwargs)
+
+    def pay(self, **kwargs):
+        kwargs.update({CALL_KEY: BROADCAST_PAY})
+        return self.broadcast_message(**kwargs)
+
+    def broadcast_message(self, **kwargs):
         result = True
         for node in self._seed_sample:
-            url = API_URL.format(node)
-            response = self._send_request(url, kwargs).json()
-            print response
-            if response.get(RESULT_KEY) != STATUS_OK:
-                result = False
-                break
+            if node != self._active_node:
+                url = API_URL.format(node)
+                response = self._send_request(url, kwargs).json()
+                print response
+                if response.get(RESULT_KEY) != STATUS_OK:
+                    result = False
+                    break
         return result
 
     @staticmethod
