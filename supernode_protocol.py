@@ -1,15 +1,17 @@
 from storages.local_data_storage import LocalDataStorage
 from storages.redis_data_storage import RedisDataStorage
 from graft_broadcast_api import GraftBroadcastAPI
-from config import REDIS_HOST, REDIS_PORT, STORAGE_TYPE, LOCAL_STORAGE, REDIS_STORAGE
+from graft_service import GraftService
 from threading import Lock
 from defines import *
+from config import *
 
 
 class SupernodeProtocol:
     TRANSACTION_CACHE_LEVEL = "transaction_cache"
     TRANSACTION_STATUS_LEVEL = "transaction_status"
     AUTHORIZATION_CACHE_LEVEL = "authorization_cache"
+    APPROVAL_CACHE_LEVEL = "approval_cache"
 
     _instance = None
     _lock = Lock()
@@ -32,6 +34,7 @@ class SupernodeProtocol:
             'RejectSale': self.reject_sale,
             'GetSaleStatus': self.get_sale_status,
             # Broadcast DAPI
+            'BroadcastApproval': self.broadcast_approval,
             'BroadcastAccountLock': self.broadcast_account_lock,
             'BroadcastTransaction': self.broadcast_transaction,
             'BroadcastRemoveAccountLock': self.broadcast_remove_account_lock,
@@ -89,11 +92,17 @@ class SupernodeProtocol:
         transaction = kwargs.get(TRANSACTION_KEY, None)
         if pid is None or transaction is None:
             return {RESULT_KEY: ERROR_EMPTY_PARAMS}
-        # TODO: Validates
-        # TODO: start Mining
-        # TODO: send BroadcastTransaction()
-        self._trans_status_storage.store_data(pid, STATUS_APPROVED)
-        return {RESULT_KEY: STATUS_OK}
+        result = {RESULT_KEY: STATUS_OK}
+        if not GraftService.validate(transaction):
+            result = {RESULT_KEY: ERROR_INVALID_TRANSACTION}
+        else:
+            trans, sign = GraftService.sign(transaction)
+            data = kwargs.copy()
+            data.update({TRANSACTION_KEY: trans, APPROVAL_KEY: sign})
+            if not self._broadcast_api.approval(**data):
+                result = {RESULT_KEY: ERROR_BROADCAST_FAILED}
+        # self._trans_status_storage.store_data(pid, STATUS_APPROVED)
+        return result
 
     def get_pay_status(self, **kwargs):
         pid = kwargs.get(PID_KEY, None)
@@ -145,6 +154,23 @@ class SupernodeProtocol:
 
     # Broadcast DAPI
 
+    def broadcast_approval(self, **kwargs):
+        pid = kwargs.get(PID_KEY, None)
+        transaction = kwargs.get(TRANSACTION_KEY, None)
+        approval = kwargs.get(APPROVAL_KEY, None)
+        if pid is None or transaction is None or approval is None:
+            return {RESULT_KEY: ERROR_EMPTY_PARAMS}
+        approvals = self._approval_storage.get_data(pid)
+        approvals[approval] = transaction
+        if len(approvals.keys()) == len(SEED_SAMPLE):
+            # TODO: Mining
+            data = {TRANSACTION_KEY: transaction, APPROVALS_KEY: approvals}
+            if not self._broadcast_api.transaction(**data):
+                return {RESULT_KEY: ERROR_BROADCAST_FAILED}
+        else:
+            self._approval_storage.store_data(pid, approvals)
+        return {RESULT_KEY: STATUS_OK}
+
     def broadcast_account_lock(self, **kwargs):
         return None
 
@@ -187,8 +213,10 @@ class SupernodeProtocol:
         self._trans_cache_storage = LocalDataStorage(self.TRANSACTION_CACHE_LEVEL)
         self._trans_status_storage = LocalDataStorage(self.TRANSACTION_STATUS_LEVEL)
         self._auth_cache_storage = LocalDataStorage(self.AUTHORIZATION_CACHE_LEVEL)
+        self._approval_storage = LocalDataStorage(self.APPROVAL_CACHE_LEVEL)
 
     def _init_redis_storage(self):
         self._trans_cache_storage = RedisDataStorage(REDIS_HOST, REDIS_PORT, self.TRANSACTION_CACHE_LEVEL)
         self._trans_status_storage = RedisDataStorage(REDIS_HOST, REDIS_PORT, self.TRANSACTION_STATUS_LEVEL)
         self._auth_cache_storage = RedisDataStorage(REDIS_HOST, REDIS_PORT, self.AUTHORIZATION_CACHE_LEVEL)
+        self._approval_storage = RedisDataStorage(REDIS_HOST, REDIS_PORT, self.APPROVAL_CACHE_LEVEL)

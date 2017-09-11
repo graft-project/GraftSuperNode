@@ -27,6 +27,14 @@ class GraftBroadcastAPI(object):
         kwargs.update({CALL_KEY: BROADCAST_PAY})
         return self.broadcast_message(**kwargs)
 
+    def approval(self, **kwargs):
+        kwargs.update({CALL_KEY: BROADCAST_APPROVAL})
+        return self.broadcast_message(**kwargs)
+
+    def transaction(self, **kwargs):
+        kwargs.update({CALL_KEY: BROADCAST_TRANSACTION})
+        return self.broadcast_message(**kwargs)
+
     def broadcast_message(self, **kwargs):
         result = True
         for node in self._seed_sample:
