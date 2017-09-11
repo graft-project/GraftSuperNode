@@ -13,6 +13,7 @@ BROADCAST_SALE = 'Sale'
 BROADCAST_PAY = 'Pay'
 BROADCAST_APPROVAL = 'BroadcastApproval'
 BROADCAST_TRANSACTION = 'BroadcastTransaction'
+BROADCAST_PAY_REQUEST = 'BroadcastPayRequest'
 
 STATUS_OK = 0
 STATUS_APPROVED = 0

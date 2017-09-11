@@ -27,6 +27,10 @@ class GraftBroadcastAPI(object):
         kwargs.update({CALL_KEY: BROADCAST_PAY})
         return self.broadcast_message(**kwargs)
 
+    def pay_request(self, **kwargs):
+        kwargs.update({CALL_KEY: BROADCAST_PAY_REQUEST})
+        return self.broadcast_message(**kwargs)
+
     def approval(self, **kwargs):
         kwargs.update({CALL_KEY: BROADCAST_APPROVAL})
         return self.broadcast_message(**kwargs)

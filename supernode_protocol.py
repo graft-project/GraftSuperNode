@@ -34,6 +34,7 @@ class SupernodeProtocol:
             'RejectSale': self.reject_sale,
             'GetSaleStatus': self.get_sale_status,
             # Broadcast DAPI
+            'BroadcastPayRequest': self.broadcast_pay_request,
             'BroadcastApproval': self.broadcast_approval,
             'BroadcastAccountLock': self.broadcast_account_lock,
             'BroadcastTransaction': self.broadcast_transaction,
@@ -93,15 +94,11 @@ class SupernodeProtocol:
         if pid is None or transaction is None:
             return {RESULT_KEY: ERROR_EMPTY_PARAMS}
         result = {RESULT_KEY: STATUS_OK}
-        if not GraftService.validate(transaction):
-            result = {RESULT_KEY: ERROR_INVALID_TRANSACTION}
-        else:
-            trans, sign = GraftService.sign(transaction)
-            data = kwargs.copy()
-            data.update({TRANSACTION_KEY: trans, APPROVAL_KEY: sign})
-            if not self._broadcast_api.approval(**data):
+        if GraftService.validate(transaction):
+            if not self._broadcast_api.pay_request(**kwargs):
                 result = {RESULT_KEY: ERROR_BROADCAST_FAILED}
-        # self._trans_status_storage.store_data(pid, STATUS_APPROVED)
+        else:
+            result = {RESULT_KEY: ERROR_INVALID_TRANSACTION}
         return result
 
     def get_pay_status(self, **kwargs):
@@ -153,6 +150,22 @@ class SupernodeProtocol:
         return {RESULT_KEY: STATUS_OK, SALE_STATUS_KEY: self._trans_status_storage.get_data(pid)}
 
     # Broadcast DAPI
+
+    def broadcast_pay_request(self, **kwargs):
+        pid = kwargs.get(PID_KEY, None)
+        transaction = kwargs.get(TRANSACTION_KEY, None)
+        if pid is None or transaction is None:
+            return {RESULT_KEY: ERROR_EMPTY_PARAMS}
+        result = {RESULT_KEY: STATUS_OK}
+        if GraftService.validate(transaction):
+            trans, sign = GraftService.sign(transaction)
+            data = kwargs.copy()
+            data.update({TRANSACTION_KEY: trans, APPROVAL_KEY: sign})
+            if not self._broadcast_api.approval(**data):
+                result = {RESULT_KEY: ERROR_BROADCAST_FAILED}
+        else:
+            result = {RESULT_KEY: ERROR_INVALID_TRANSACTION}
+        return result
 
     def broadcast_approval(self, **kwargs):
         pid = kwargs.get(PID_KEY, None)
