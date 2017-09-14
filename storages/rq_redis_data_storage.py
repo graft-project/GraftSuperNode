@@ -19,5 +19,5 @@ class RQRedisDataStorage(RedisDataStorage):
         return cls._instance
 
     def store_job_result(self, record_dict, callback_code):
-        job_result_key = REDIS_JOB_RESULT_KEY & callback_code
+        job_result_key = REDIS_JOB_RESULT_KEY % callback_code
         self._storage.set(name=job_result_key, value=record_dict)
