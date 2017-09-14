@@ -26,7 +26,7 @@ def broadcast_message(callback_code, **kwargs):
     for node in seed_sample:
         if node != active_node:
             url = API_URL.format(node)
-            response = send_request(url, kwargs).json()
+            response = send_request(url, kwargs.get('message')).json()
             service_logger.debug(response)
             if response.get(RESULT_KEY) != STATUS_OK:
                 result = False
@@ -80,8 +80,9 @@ class GraftBroadcastAPI(object):
         return True
 
     def run_broadcast_job(self, callback, **kwargs):
-        kwargs.update({'seed_sample': self._seed_sample, 'active_node': self._active_node})
-        self._queue.run_job(broadcast_job, callback=callback, **kwargs)
+        job_data = {'message': kwargs, 'seed_sample': self._seed_sample,
+                    'active_node': self._active_node}
+        self._queue.run_job(broadcast_job, callback=callback, **job_data)
 
     @staticmethod
     def _send_request(url, data):
