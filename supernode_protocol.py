@@ -107,7 +107,7 @@ class SupernodeProtocol:
             return {RESULT_KEY: ERROR_EMPTY_PARAMS, PAY_STATUS_KEY: STATUS_NONE}
         if not self._trans_status_storage.exists(pid):
             return {RESULT_KEY: ERROR_PAYMENT_ID_DOES_NOT_EXISTS, PAY_STATUS_KEY: STATUS_NONE}
-        return {RESULT_KEY: STATUS_OK, PAY_STATUS_KEY: self._trans_status_storage.get_data(pid)}
+        return {RESULT_KEY: STATUS_OK, PAY_STATUS_KEY: int(self._trans_status_storage.get_data(pid))}
 
     # Point of Sale DAPI
 
@@ -147,7 +147,7 @@ class SupernodeProtocol:
             return {RESULT_KEY: ERROR_EMPTY_PARAMS, SALE_STATUS_KEY: STATUS_NONE}
         if not self._trans_status_storage.exists(pid):
             return {RESULT_KEY: ERROR_PAYMENT_ID_DOES_NOT_EXISTS, SALE_STATUS_KEY: STATUS_NONE}
-        return {RESULT_KEY: STATUS_OK, SALE_STATUS_KEY: self._trans_status_storage.get_data(pid)}
+        return {RESULT_KEY: STATUS_OK, SALE_STATUS_KEY: int(self._trans_status_storage.get_data(pid))}
 
     # Broadcast DAPI
 
