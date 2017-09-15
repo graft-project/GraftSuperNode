@@ -183,7 +183,7 @@ class SupernodeProtocol:
         service_logger.debug(len(SEED_SAMPLE))
         if len(approvals.keys()) == len(SEED_SAMPLE):
             # TODO: Mining
-            data = {TRANSACTION_KEY: transaction, APPROVALS_KEY: approvals}
+            data = {TRANSACTION_KEY: transaction, APPROVALS_KEY: approvals, PID_KEY: pid}
             if not self._broadcast_api.transaction(**data):
                 return {RESULT_KEY: ERROR_BROADCAST_FAILED}
         else:
