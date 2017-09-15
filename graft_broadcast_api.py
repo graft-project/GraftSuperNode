@@ -26,9 +26,14 @@ def broadcast_message(callback_code, **kwargs):
     for node in seed_sample:
         if node != active_node:
             url = API_URL.format(node)
-            response = send_request(url, kwargs.get('message')).json()
+            response = send_request(url, kwargs.get('message'))
             service_logger.debug(response)
-            if response.get(RESULT_KEY) != STATUS_OK:
+            if response.status_code == 200:
+                response = response.json()
+                if response.get(RESULT_KEY) != STATUS_OK:
+                    result = False
+                    break
+            else:
                 result = False
                 break
     res = {'callback_code': callback_code, 'result': result}
