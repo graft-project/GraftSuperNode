@@ -203,7 +203,7 @@ class SupernodeProtocol:
         self._trans_status_storage.store_data(pid, STATUS_APPROVED)
         expired_jobs = list(RQRedisDataStorage.instance().get_data(REDIS_EXPIRED_JOBS_KEY, []))
         expired_jobs.append(TEMPORAL_KEY_FORMAT % (BROADCAST_TRANSACTION, pid))
-        RQRedisDataStorage.store_data(REDIS_EXPIRED_JOBS_KEY, expired_jobs)
+        RQRedisDataStorage.instance().store_data(REDIS_EXPIRED_JOBS_KEY, expired_jobs)
         return {RESULT_KEY: STATUS_OK}
 
     def broadcast_remove_account_lock(self, **kwargs):
