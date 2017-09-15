@@ -21,21 +21,19 @@ def broadcast_job(callback_code, **kwargs):
 @store_job_result
 def broadcast_message(callback_code, **kwargs):
     seed_sample = kwargs.get('seed_sample')
-    active_node = kwargs.get('active_node')
     result = True
     for node in seed_sample:
-        if node != active_node:
-            url = API_URL.format(node)
-            response = send_request(url, kwargs.get('message'))
-            service_logger.debug(response)
-            if response.status_code == 200:
-                response = response.json()
-                if response.get(RESULT_KEY) != STATUS_OK:
-                    result = False
-                    break
-            else:
+        url = API_URL.format(node)
+        response = send_request(url, kwargs.get('message'))
+        service_logger.debug(response)
+        if response.status_code == 200:
+            response = response.json()
+            if response.get(RESULT_KEY) != STATUS_OK:
                 result = False
                 break
+        else:
+            result = False
+            break
     res = {'callback_code': callback_code, 'result': result}
     return res
 
@@ -48,6 +46,9 @@ class GraftBroadcastAPI(object):
 
     def register_supernode(self, address):
         self._active_node = address
+
+    def active_node(self):
+        return self._active_node
 
     def add_sample_node(self, address):
         if not self._seed_sample.__contains__(address):
@@ -85,8 +86,9 @@ class GraftBroadcastAPI(object):
         return True
 
     def run_broadcast_job(self, callback, **kwargs):
-        job_data = {'message': kwargs, 'seed_sample': self._seed_sample,
-                    'active_node': self._active_node}
+        seed_sample = self._seed_sample.copy()
+        seed_sample.remove(self._active_node)
+        job_data = {'message': kwargs, 'seed_sample': seed_sample}
         self._queue.run_job(broadcast_job, callback=callback, **job_data)
 
     @staticmethod

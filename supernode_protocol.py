@@ -6,6 +6,7 @@ from threading import Lock
 from defines import *
 from config import *
 import ast
+from logger import service_logger
 
 
 class SupernodeProtocol:
@@ -159,7 +160,7 @@ class SupernodeProtocol:
             return {RESULT_KEY: ERROR_EMPTY_PARAMS}
         result = {RESULT_KEY: STATUS_OK}
         if GraftService.validate(transaction):
-            trans, sign = GraftService.sign(transaction)
+            trans, sign = GraftService.sign("{}_{}".format(transaction, self._broadcast_api.active_node()))
             data = kwargs.copy()
             data.update({TRANSACTION_KEY: trans, APPROVAL_KEY: sign})
             if not self._broadcast_api.approval(**data):
@@ -178,6 +179,8 @@ class SupernodeProtocol:
         if isinstance(approvals, str):
             approvals = ast.literal_eval(approvals)
         approvals[approval] = transaction
+        service_logger.debug(len(approvals.keys()))
+        service_logger.debug(len(SEED_SAMPLE))
         if len(approvals.keys()) == len(SEED_SAMPLE):
             # TODO: Mining
             data = {TRANSACTION_KEY: transaction, APPROVALS_KEY: approvals}
