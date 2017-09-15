@@ -201,7 +201,7 @@ class SupernodeProtocol:
             return {RESULT_KEY: ERROR_PAYMENT_ID_DOES_NOT_EXISTS}
         self._trans_cache_storage.delete_data(pid)
         self._trans_status_storage.store_data(pid, STATUS_APPROVED)
-        expired_jobs = list(RQRedisDataStorage.instance().get_data(REDIS_EXPIRED_JOBS_KEY))
+        expired_jobs = list(RQRedisDataStorage.instance().get_data(REDIS_EXPIRED_JOBS_KEY, []))
         expired_jobs.append(TEMPORAL_KEY_FORMAT % (BROADCAST_TRANSACTION, pid))
         RQRedisDataStorage.store_data(REDIS_EXPIRED_JOBS_KEY, expired_jobs)
         return {RESULT_KEY: STATUS_OK}
