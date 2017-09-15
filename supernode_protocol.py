@@ -6,7 +6,6 @@ from graft_service import GraftService
 from threading import Lock
 from defines import *
 from config import *
-import ast
 
 
 class SupernodeProtocol:
@@ -175,9 +174,7 @@ class SupernodeProtocol:
         approval = kwargs.get(APPROVAL_KEY, None)
         if pid is None or transaction is None or approval is None:
             return {RESULT_KEY: ERROR_EMPTY_PARAMS}
-        approvals = self._approval_storage.get_data(pid, {})
-        if isinstance(approvals, str):
-            approvals = ast.literal_eval(approvals)
+        approvals = self._approval_storage.parse(self._approval_storage.get_data(pid, {}))
         approvals[approval] = transaction
         if len(approvals.keys()) == len(SEED_SAMPLE):
             # TODO: Mining
@@ -201,7 +198,7 @@ class SupernodeProtocol:
             return {RESULT_KEY: ERROR_PAYMENT_ID_DOES_NOT_EXISTS}
         self._trans_cache_storage.delete_data(pid)
         self._trans_status_storage.store_data(pid, STATUS_APPROVED)
-        expired_jobs = list(RQRedisDataStorage.instance().get_data(REDIS_EXPIRED_JOBS_KEY, []))
+        expired_jobs = RQRedisDataStorage.parse(RQRedisDataStorage.instance().get_data(REDIS_EXPIRED_JOBS_KEY, []))
         expired_jobs.append(TEMPORAL_KEY_FORMAT % (BROADCAST_TRANSACTION, pid))
         RQRedisDataStorage.instance().store_data(REDIS_EXPIRED_JOBS_KEY, expired_jobs)
         return {RESULT_KEY: STATUS_OK}

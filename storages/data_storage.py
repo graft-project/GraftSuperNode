@@ -1,3 +1,6 @@
+import ast
+
+
 class DataStorage:
     def __init__(self, level):
         self._level = level
@@ -16,3 +19,9 @@ class DataStorage:
 
     def exists(self, pid):
         raise NotImplementedError
+
+    @staticmethod
+    def parse(data):
+        if isinstance(data, str):
+            return ast.literal_eval(data)
+        return data
