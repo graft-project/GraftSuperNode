@@ -86,8 +86,8 @@ class GraftBroadcastAPI(object):
         return True
 
     def run_broadcast_job(self, callback, **kwargs):
-        seed_sample = self._seed_sample.copy()
-        seed_sample.remove(self._active_node)
+        seed_sample = self._seed_sample[:]
+        # seed_sample.remove(self._active_node)
         job_data = {'message': kwargs, 'seed_sample': seed_sample}
         self._queue.run_job(broadcast_job, callback=callback, **job_data)
 
