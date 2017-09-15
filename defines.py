@@ -15,6 +15,8 @@ BROADCAST_APPROVAL = 'BroadcastApproval'
 BROADCAST_TRANSACTION = 'BroadcastTransaction'
 BROADCAST_PAY_REQUEST = 'BroadcastPayRequest'
 
+TEMPORAL_KEY_FORMAT = '%s:%s'
+
 STATUS_OK = 0
 STATUS_APPROVED = 0
 STATUS_PROCESSING = 1
@@ -30,3 +32,4 @@ ERROR_INVALID_TRANSACTION = -6
 
 REDIS_GENERAL_CHANNEL = 'graft_supernode_general:%s'
 REDIS_JOB_RESULT_KEY = REDIS_GENERAL_CHANNEL % 'job_result::%s'
+REDIS_EXPIRED_JOBS_KEY = 'expired_jobs_list'

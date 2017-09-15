@@ -1,3 +1,4 @@
+from storages.rq_redis_data_storage import RQRedisDataStorage
 from decorators import store_job_result
 from config import SEED_SAMPLE, API_URL
 from queue_manager import QueueManager
@@ -21,10 +22,13 @@ def broadcast_job(callback_code, **kwargs):
 @store_job_result
 def broadcast_message(callback_code, **kwargs):
     seed_sample = kwargs.get('seed_sample')
+    message = kwargs.get('message')
+    if is_expired(message):
+        return {'callback_code': callback_code, 'result': 'expired'}
     result = True
     for node in seed_sample:
         url = API_URL.format(node)
-        response = send_request(url, kwargs.get('message'))
+        response = send_request(url, message)
         service_logger.debug(response)
         if response.status_code == 200:
             response = response.json()
@@ -36,6 +40,17 @@ def broadcast_message(callback_code, **kwargs):
             break
     res = {'callback_code': callback_code, 'result': result}
     return res
+
+
+def is_expired(message):
+    message_temp_key = TEMPORAL_KEY_FORMAT % (message.get(CALL_KEY),
+                                              message.get(PID_KEY))
+    expired_list = list(RQRedisDataStorage.instance().get_data(REDIS_EXPIRED_JOBS_KEY))
+    if expired_list.__contains__(message_temp_key):
+        expired_list.remove(message_temp_key)
+        RQRedisDataStorage.instance().store_data(REDIS_EXPIRED_JOBS_KEY, expired_list)
+        return True
+    return False
 
 
 class GraftBroadcastAPI(object):
