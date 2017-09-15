@@ -5,6 +5,7 @@ from graft_service import GraftService
 from threading import Lock
 from defines import *
 from config import *
+import ast
 
 
 class SupernodeProtocol:
@@ -174,6 +175,8 @@ class SupernodeProtocol:
         if pid is None or transaction is None or approval is None:
             return {RESULT_KEY: ERROR_EMPTY_PARAMS}
         approvals = self._approval_storage.get_data(pid, {})
+        if isinstance(approvals, str):
+            approvals = ast.literal_eval(approvals)
         approvals[approval] = transaction
         if len(approvals.keys()) == len(SEED_SAMPLE):
             # TODO: Mining
