@@ -6,6 +6,7 @@ from graft_service import GraftService
 from threading import Lock
 from defines import *
 from config import *
+from logger import service_logger
 
 
 class SupernodeProtocol:
@@ -199,7 +200,9 @@ class SupernodeProtocol:
         self._trans_cache_storage.delete_data(pid)
         self._trans_status_storage.store_data(pid, STATUS_APPROVED)
         expired_jobs = RQRedisDataStorage.parse(RQRedisDataStorage.instance().get_data(REDIS_EXPIRED_JOBS_KEY, []))
+        service_logger.debug(expired_jobs)
         expired_jobs.append(TEMPORAL_KEY_FORMAT % (BROADCAST_TRANSACTION, pid))
+        service_logger.debug(expired_jobs)
         RQRedisDataStorage.instance().store_data(REDIS_EXPIRED_JOBS_KEY, expired_jobs)
         return {RESULT_KEY: STATUS_OK}
 

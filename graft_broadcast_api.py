@@ -43,9 +43,11 @@ def broadcast_message(callback_code, **kwargs):
 
 
 def is_expired(message):
+    service_logger.debug(message)
     message_temp_key = TEMPORAL_KEY_FORMAT % (message.get(CALL_KEY),
                                               message.get(PID_KEY))
     expired_list = RQRedisDataStorage.parse(RQRedisDataStorage.instance().get_data(REDIS_EXPIRED_JOBS_KEY, []))
+    service_logger.debug(expired_list)
     if expired_list.__contains__(message_temp_key):
         expired_list.remove(message_temp_key)
         RQRedisDataStorage.instance().store_data(REDIS_EXPIRED_JOBS_KEY, expired_list)
