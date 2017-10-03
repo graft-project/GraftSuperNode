@@ -76,7 +76,6 @@ class SupernodeProtocol:
         if self._auth_cache_storage.exists(pid) and self._auth_cache_storage.get_data(pid) == key_image:
             return {RESULT_KEY: ERROR_ACCOUNT_LOCKED, TRANSACTION_KEY: None}
         # TODO: send BroadcastAccountLock()
-        print(self._trans_cache_storage.get_data(pid))
         return {RESULT_KEY: STATUS_OK, TRANSACTION_KEY: self._trans_cache_storage.get_data(pid)}
 
     def reject_pay(self, **kwargs):
