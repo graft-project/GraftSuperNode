@@ -67,12 +67,16 @@ class SupernodeProtocol:
         return cls._instance
 
     def process(self, **kwargs):
-        call = kwargs[CALL_KEY]
-        del kwargs[CALL_KEY]
-        call_func = self._requests.get(call)
-        if call_func is not None:
-            return call_func(**kwargs)
-        return None
+        # call = kwargs[CALL_KEY]
+        # del kwargs[CALL_KEY]
+        # call_func = self._requests.get(call)
+        # if call_func is not None:
+        #     return call_func(**kwargs)
+        # return None
+        return [1]
+
+    def last_result(self):
+        return [2]
 
     # Wallet DAPI
 
