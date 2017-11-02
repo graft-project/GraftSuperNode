@@ -16,13 +16,24 @@ settings = {
 
 
 class APIHandler(tornado.web.RequestHandler):
+    def __init__(self, application, request, **kwargs):
+        tornado.web.RequestHandler.__init__(self, application, request, **kwargs)
+        SupernodeProtocol.instance().register_delayed_callback(self._delayed_answer)
+
+    def _delayed_answer(self, result):
+        if result is not None:
+            logger.info('Delayed Answer')
+            logger.info('Send message: {}'.format(result))
+            self.write(json.dumps(result))
+
     def post(self, *args, **kwargs):
         request_body = json.loads(self.request.body)
         SupernodeProtocol.instance().register_supernode(self.request.headers['Host'])
         logger.info('Received message: {}'.format(request_body))
         result = SupernodeProtocol.instance().process(**request_body)
-        logger.info('Send message: {}'.format(result))
-        self.write(json.dumps(result))
+        if result is not None:
+            logger.info('Send message: {}'.format(result))
+            self.write(json.dumps(result))
 
 
 class HttpApplication(tornado.web.Application):

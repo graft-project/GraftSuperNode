@@ -12,4 +12,9 @@ SEED_SAMPLE = [
     "52.32.174.252:8080"
 ]
 
+# GRAFT_NODE_ADDRESS = "127.0.0.1:28982"
+GRAFT_NODE_ADDRESS = "35.160.129.162:28982"
+
+GRAFT_NODE_URL = "http://{}/json_rpc"
+
 API_URL = "http://{}/api"

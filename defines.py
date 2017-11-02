@@ -8,6 +8,10 @@ PAY_STATUS_KEY = 'PayStatus'
 BROADCAST_KEY = 'Broadcast'
 APPROVALS_KEY = 'Approvals'
 APPROVAL_KEY = 'Approval'
+# Temporal DAPI
+USERNAME_KEY = 'Username'
+PASSWORD_KEY = 'Password'
+WALLET_KEY = 'Wallet'
 
 BROADCAST_SALE = 'Sale'
 BROADCAST_PAY = 'Pay'
@@ -33,3 +37,8 @@ ERROR_INVALID_TRANSACTION = -6
 REDIS_GENERAL_CHANNEL = 'graft_supernode_general:%s'
 REDIS_JOB_RESULT_KEY = REDIS_GENERAL_CHANNEL % 'job_result::%s'
 REDIS_EXPIRED_JOBS_KEY = 'expired_jobs_list'
+
+GRAFT_NODE_FILENAME = "filename"
+GRAFT_NODE_PASSWORD = "password"
+GRAFT_NODE_LANGUAGE = "language"
+GRAFT_NODE_PID = "pid"

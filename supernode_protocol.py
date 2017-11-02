@@ -2,6 +2,7 @@ from storages.rq_redis_data_storage import RQRedisDataStorage
 from storages.local_data_storage import LocalDataStorage
 from storages.redis_data_storage import RedisDataStorage
 from graft_broadcast_api import GraftBroadcastAPI
+from graft_node_api import GraftNodeAPI
 from graft_service import GraftService
 from threading import Lock
 from defines import *
@@ -14,11 +15,14 @@ class SupernodeProtocol:
     TRANSACTION_STATUS_LEVEL = "transaction_status"
     AUTHORIZATION_CACHE_LEVEL = "authorization_cache"
     APPROVAL_CACHE_LEVEL = "approval_cache"
+    WALLET_CACHE_LEVEL = "wallet_cache"
 
     _instance = None
     _lock = Lock()
 
     def __init__(self):
+        self._delayed_callback = None
+        self._node_api = GraftNodeAPI()
         self._broadcast_api = GraftBroadcastAPI()
         init_storage = {LOCAL_STORAGE: self._init_local_storage,
                         REDIS_STORAGE: self._init_redis_storage}
@@ -42,8 +46,15 @@ class SupernodeProtocol:
             'BroadcastTransaction': self.broadcast_transaction,
             'BroadcastRemoveAccountLock': self.broadcast_remove_account_lock,
             # Generic DAPI
-            'GetWalletBalance': self.get_wallet_balance
+            'GetWalletBalance': self.get_wallet_balance,
+            # Temporal DAPI
+            'CreateAccount': self.create_account,
+            'StartSession': self.start_session,
+            'CloseSession': self.close_session
         }
+
+    def register_delayed_callback(self, callback):
+        self._delayed_callback = callback
 
     def register_supernode(self, address):
         self._broadcast_api.register_supernode(address)
@@ -229,14 +240,84 @@ class SupernodeProtocol:
     def broadcast_supernode_remove(self, **kwargs):
         return None
 
+    # Temporal DAPI
+
+    def create_account(self, **kwargs):
+        pid = kwargs.get(PID_KEY, None)
+        service_logger.info('CreateAccount: {}'.format(pid))
+        username = kwargs.get(USERNAME_KEY, None)
+        password = kwargs.get(PASSWORD_KEY, None)
+        if username is None or password is None:
+            return {RESULT_KEY: ERROR_EMPTY_PARAMS}
+        data = {GRAFT_NODE_PID: pid, GRAFT_NODE_FILENAME: username, GRAFT_NODE_PASSWORD: password}
+        self._node_api.create_wallet(self._create_account_callback, **data)
+        return None
+
+    def _create_account_callback(self, result):
+        pid = result['pid']
+        service_logger.info('CreateAccount: {}'.format(pid))
+        if result['status'] == 'result':
+            if result['details']['result']:
+                # TODO: Add wallet file reading
+                return result
+            else:
+                service_logger.info('CreateAccount: {} failed!'.format(pid))
+        else:
+            service_logger.info('CreateAccount: {} : {}'.format(pid, result['details']['message']))
+
+    def start_session(self, **kwargs):
+        pid = kwargs.get(PID_KEY, None)
+        service_logger.info('StartSession: {}'.format(pid))
+        username = kwargs.get(USERNAME_KEY, None)
+        password = kwargs.get(PASSWORD_KEY, None)
+        wallet = kwargs.get(WALLET_KEY, None)
+        if pid is None or username is None or password is None or wallet is None:
+            return {RESULT_KEY: ERROR_EMPTY_PARAMS}
+        self._wallet_storage.store_data(pid, {USERNAME_KEY: username, PASSWORD_KEY: password})
+        # TODO: store wallet file
+        data = {GRAFT_NODE_PID: pid, GRAFT_NODE_FILENAME: username, GRAFT_NODE_PASSWORD: password}
+        self._node_api.open_wallet(self._start_session_callback, **data)
+        return None
+
+    def _start_session_callback(self, result):
+        pid = result['pid']
+        if result['status'] == 'result':
+            if result['details']['result']:
+                return result
+            else:
+                service_logger.info('StartSession: {} failed!'.format(pid))
+        else:
+            service_logger.info('StartSession: {} : {}'.format(pid, result['details']['message']))
+
+    def close_session(self, **kwargs):
+        pid = kwargs.get(PID_KEY, None)
+        service_logger.info('CloseSession: {}'.format(pid))
+        if pid is None:
+            return {RESULT_KEY: ERROR_EMPTY_PARAMS}
+        self._node_api.stop_wallet(self._close_session_callback, **{GRAFT_NODE_PID: pid})
+        return None
+
+    def _close_session_callback(self, result):
+        pid = result['pid']
+        if result['status'] == 'result':
+            if result['details']['result']:
+                self._wallet_storage.delete_data(pid)
+                return result
+            else:
+                service_logger.info('CloseSession: failed!')
+        else:
+            service_logger.info('CloseSession: {}'.format(result['details']['message']))
+
     def _init_local_storage(self):
         self._trans_cache_storage = LocalDataStorage(self.TRANSACTION_CACHE_LEVEL)
         self._trans_status_storage = LocalDataStorage(self.TRANSACTION_STATUS_LEVEL)
         self._auth_cache_storage = LocalDataStorage(self.AUTHORIZATION_CACHE_LEVEL)
         self._approval_storage = LocalDataStorage(self.APPROVAL_CACHE_LEVEL)
+        self._wallet_storage = LocalDataStorage(self.WALLET_CACHE_LEVEL)
 
     def _init_redis_storage(self):
         self._trans_cache_storage = RedisDataStorage(REDIS_HOST, REDIS_PORT, self.TRANSACTION_CACHE_LEVEL)
         self._trans_status_storage = RedisDataStorage(REDIS_HOST, REDIS_PORT, self.TRANSACTION_STATUS_LEVEL)
         self._auth_cache_storage = RedisDataStorage(REDIS_HOST, REDIS_PORT, self.AUTHORIZATION_CACHE_LEVEL)
         self._approval_storage = RedisDataStorage(REDIS_HOST, REDIS_PORT, self.APPROVAL_CACHE_LEVEL)
+        self._wallet_storage = RedisDataStorage(REDIS_HOST, REDIS_PORT, self.WALLET_CACHE_LEVEL)
