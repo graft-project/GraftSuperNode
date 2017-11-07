@@ -3,7 +3,7 @@ DB_DIR=/var/lib/redis
 
 #Install the Build and Test Dependencies
 sudo apt-get update
-sudo apt-get install build-essential tcl
+sudo apt-get install build-essential tcl curl
 
 #Download, Compile, and Install Redis
 cd /tmp
